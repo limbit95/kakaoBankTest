@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3300/kakao?useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: test1234
+  jpa:
+    #    show-sql: true
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        format_sql: true
+# Trace < Debug < Info < Error
+# ?? ??, Error? ???? Error ??? Log? ??? ??
+# ?? ??, Debug? ???? Trace? ??? ??, Debug ??? ??? ?
+logging:
+  level:
+    root: info
