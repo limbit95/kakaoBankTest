@@ -7,12 +7,15 @@ import KakaoBank.KakaoBank.customer.service.UserService;
 import KakaoBank.KakaoBank.remittanceList.domain.RemittanceList;
 import KakaoBank.KakaoBank.remittanceList.domain.RemittanceListDto;
 import KakaoBank.KakaoBank.remittanceList.service.RemittanceListService;
+import KakaoBank.KakaoBank.statistics.domain.Statistics;
+import KakaoBank.KakaoBank.statistics.service.StatisticsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.math.BigDecimal;
@@ -24,13 +27,15 @@ public class RemittanceListController {
     private final RemittanceListService remittanceListService;
     private final UserService userService;
     private final AccountService accountService;
+    private final StatisticsService statisticsService;
 
 
     @Autowired
-    public RemittanceListController(RemittanceListService remittanceListService, UserService userService, AccountService accountService) {
+    public RemittanceListController(RemittanceListService remittanceListService, UserService userService, AccountService accountService, StatisticsService statisticsService) {
         this.remittanceListService = remittanceListService;
         this.userService = userService;
         this.accountService = accountService;
+        this.statisticsService = statisticsService;
     }
 
 
@@ -42,6 +47,7 @@ public class RemittanceListController {
         User user = userService.findByEmail(remittanceListDto.getEmail());
 //        파입업로드 여부 조회하도록 user정보 조회 : findByemail;
         Account account = accountService.findByAccountNumber(remittanceListDto.getAccountNumber());
+
 
         // 송금 정보 /송금인/수취인/송금액(달러기준)/송금일/송금인id/송금계좌/주소/우편번호/환율/
         RemittanceList remittanceList = RemittanceList.builder()
@@ -56,7 +62,11 @@ public class RemittanceListController {
                 .rateKRW(remittanceListDto.getRateKRW())
                 .build();
 
-
+//        // 1년 동안 송금 누적 금액 5만불 이상인지 체크 -> 아직 누적금액 구현 안 함
+//        if(1년 누적금액 + remittanceList.getRemittance_amount_USD().compareTo(BigDecimal.valueOf(50000)) == 0 ||
+//                1년 누적금액 + remittanceList.getRemittance_amount_USD().compareTo(BigDecimal.valueOf(50000)) == 1){
+//            return new ResponseEntity<String>(HttpStatus.INTERNAL_SERVER_ERROR).getStatusCode();
+//        }
 
         // 증빙문서 업로드 여부 체크
         if(remittanceList.getRemittance_amount_USD().compareTo(BigDecimal.valueOf(5000)) == 0 ||
@@ -89,6 +99,14 @@ public class RemittanceListController {
 
             accountService.create(account);
             remittanceListService.save(remittanceList);
+
+            // 통계 테이블에 송금금액과 송금일자 저장
+
+            Statistics statistics = new Statistics();
+            statistics.setYearTotal(statistics.getYearTotal().add(remittanceList.getRemittance_amount_USD()));
+            statistics.setCreateTime(LocalDateTime.now());
+
+
         }
 
         return null;
